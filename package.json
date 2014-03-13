@@ -1,0 +1,35 @@
+{
+  "name": "workerrpc",
+  "version": "0.0.1",
+  "description": "Worker/Pool Abstraction for RedisRPC",
+  "main": "lib/WorkerRPC.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "redisrpc":"*",
+    "async": "*"
+  },
+  "devDependencies": {
+    "mocha": "~1.17.1"
+  },
+  "scripts": {
+    "test": "mocha test -R spec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/carstenschwede/WorkerRPC.git"
+  },
+  "keywords": [
+    "Worker",
+    "Pool",
+    "Redis",
+    "RPC"
+  ],
+  "author": "Carsten Schwede",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/carstenschwede/WorkerRPC/issues"
+  },
+  "homepage": "https://github.com/carstenschwede/WorkerRPC"
+}
