@@ -1,6 +1,8 @@
 var should = require('should');
 var async = require("async");
 var WorkerRPC = require("../lib/WorkerRPC");
+
+//WE ARE GOING TO CREATE AS MANY WORKERS AS WE HAVE CORES
 var numCores = require("os").cpus().length;
 
 var createWorkers = function(numCores,script,callback) {
@@ -25,26 +27,17 @@ describe('WorkerRPC', function(){
 	});
 
 	it('should work within a pool', function(done) {
+		//WE ARE GOING TO CALCULATE PI USING PARALLEL MONTE CARLO METHODS
+
+		//HOW MANY TOTAL TRIALS?
 		var targetTrials = 10*1000*1000;
+
+		//HOW MANY RUNS?
 		var runs = numCores;
 		var numTrialsPerCore = Math.ceil(targetTrials/runs);
 
-
-		var startedAt = +(new Date());
-		var results = {insideCircle:0,outsideCircle:0,total:0};
-
-		var pool = WorkerRPC.pool(numCores,function() {
-			//console.log("Finished");
-			var duration = +(new Date()) - startedAt;
-
-			var piEstimate = 4*results.a/results.total;
-			var piDelta = Math.PI - piEstimate;
-
-			results.total.should.equal(numTrialsPerCore*runs);
-			//console.log("Finished calculating PI",piEstimate,results.total,numTrialsPerCore*runs);
-			done();
-		});
-
+		//RANDOM POINTS IN SQUARE [0,1], PI ~ 4*NUM_POINTS_INSIDE_CIRCLE/TOTAL_NUMBER_OF_POINTS
+		var results = {insideCircle:0,total:0};
 
 		var workloads = [];
 		for(var i=0;i<runs;i++) {
@@ -53,7 +46,6 @@ describe('WorkerRPC', function(){
 				action: function(instance,params,finished) {
 					instance.pi(numTrialsPerCore,function(insideCircle,outsideCircle,total) {
 						results.insideCircle+=insideCircle;
-						results.outsideCircle+=outsideCircle;
 						results.total+=total;
 						finished();
 					});
@@ -62,7 +54,16 @@ describe('WorkerRPC', function(){
 			});
 		}
 
+		var pool = WorkerRPC.pool(numCores,function() {
+			var piEstimate = 4*results.insideCircle/results.total;
+			var piDelta = Math.abs(Math.PI - piEstimate);
+
+			results.total.should.equal(numTrialsPerCore*runs);
+			piDelta.should.be.below(0.01);
+
+			done();
+		});
+
 		pool.add(workloads);
 	});
-
 });
