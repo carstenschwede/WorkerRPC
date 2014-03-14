@@ -1,15 +1,12 @@
 function pi(num,callback){
-	var inside = 0, outside = 0;
+	var insideCircle = 0;
 	for(var i=0;i<num;i++) {
-		var x = Math.random();
-		var y = Math.random();
-		if (x*x+y*y <= 1) {
-			inside++;
-		} else {
-			outside++;
+		var p = {x:Math.random(),y:Math.random()};
+		if (p.x*p.x+p.y*p.y <= 1) {
+			insideCircle++;
 		}
 	}
-	callback(inside,outside,num);
+	callback(insideCircle,num);
 }
 
-require("RedisRPC").wrap({pi: pi});
+require("../../lib/workerrpc").wrap({pi: pi});

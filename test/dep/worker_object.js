@@ -11,4 +11,4 @@ var person = {
 };
 
 
-require("RedisRPC").wrap(person);
+require("../../lib/WorkerRPC.js").wrap(person);

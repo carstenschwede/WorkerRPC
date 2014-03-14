@@ -17,4 +17,4 @@ var Person = Class.extend({
 var person = new Person();
 
 
-require("RedisRPC").wrap(person);
+require("../../lib/WorkerRPC.js").wrap(person);

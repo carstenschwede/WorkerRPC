@@ -1,7 +1,6 @@
 var should = require('should');
 var async = require("async");
 var WorkerRPC = require("../lib/WorkerRPC");
-
 //WE ARE GOING TO CREATE AS MANY WORKERS AS WE HAVE CORES
 var numCores = require("os").cpus().length;
 
@@ -26,44 +25,85 @@ describe('WorkerRPC', function(){
 		createWorkers(numCores,"./test/dep/worker_class.js",done);
 	});
 
-	it('should work within a pool', function(done) {
-		//WE ARE GOING TO CALCULATE PI USING PARALLEL MONTE CARLO METHODS
-
-		//HOW MANY TOTAL TRIALS?
-		var targetTrials = 10*1000*1000;
-
-		//HOW MANY RUNS?
-		var runs = numCores;
-		var numTrialsPerCore = Math.ceil(targetTrials/runs);
-
-		//RANDOM POINTS IN SQUARE [0,1], PI ~ 4*NUM_POINTS_INSIDE_CIRCLE/TOTAL_NUMBER_OF_POINTS
+	it('should work within a pool with callback/RPC', function(done) {
 		var results = {insideCircle:0,total:0};
-
 		var workloads = [];
-		for(var i=0;i<runs;i++) {
-			workloads.push({
-				script: "./test/dep/pi.js",
-				action: function(instance,params,finished) {
-					instance.pi(numTrialsPerCore,function(insideCircle,outsideCircle,total) {
-						results.insideCircle+=insideCircle;
-						results.total+=total;
-						finished();
-					});
-				},
-				params: {}
-			});
+		for(var i = 0;i < 10; i++) {
+		  workloads.push({
+		        script: "./test/dep/pi.js",
+		        action: function(instance,params,finished) {
+		            instance.pi(1000000,function(insideCircle,numOfTrials) {
+		                results.insideCircle+=insideCircle;
+		                results.total+=numOfTrials;
+		                finished();
+		            });
+		        },
+
+		        params: {}
+		    });
 		}
 
-		var pool = WorkerRPC.pool(numCores,function() {
-			var piEstimate = 4*results.insideCircle/results.total;
-			var piDelta = Math.abs(Math.PI - piEstimate);
+		var combineResults = function() {
+		  var piEstimate = 4*results.insideCircle/results.total;
+		  var piDelta = Math.abs(Math.PI-piEstimate);
+		  piDelta.should.be.below(0.01);
+		  done();
+		};
 
-			results.total.should.equal(numTrialsPerCore*runs);
-			piDelta.should.be.below(0.01);
-
-			done();
-		});
+		var numCores = require("os").cpus().length;
+		var pool = WorkerRPC.pool(numCores, combineResults);
 
 		pool.add(workloads);
+	});
+
+	it('should work within a pool using map/reduce', function(done) {
+
+		var numCores = require("os").cpus().length;
+
+		var workloads = WorkerRPC.createWorkload({
+			maxParallel: numCores,
+			script: "./test/dep/pi.js"
+		});
+
+		workloads.add(
+			[{numOfTrials:1},{numOfTrials:2},{numOfTrials:4},{numOfTrials:8}]
+		);
+
+		workloads.
+		map(
+			function doActualWork(workload,worker,next) {
+				worker.pi(workload.numOfTrials,function(insideCircle) {
+					next(null,{
+						insideCircle:insideCircle,
+						total:workload.numOfTrials
+					});
+				});
+			}
+		).reduce(
+
+			//WE ARE GOING TO SUM THE RESULTS UP, STARTING AT ZERO
+			{insideCircle:0,total:0},
+
+			//CODE TO ACTUALLY ADD RESULTS
+			function sumSingleWorksResults(sum, current, next) {
+				sum.insideCircle+=current.insideCircle;
+				sum.total+=current.total;
+				next(null,sum);
+			},
+
+			//FINISHED ADDING UP, PRINT RESULTS
+			function printSumAndEstimate(err,sum) {
+				var piEstimate = 4*sum.insideCircle/sum.total;
+				var piDelta = Math.abs(Math.PI-piEstimate);
+				piDelta.should.be.below(0.01);
+				done();
+			}
+		);
+
+
+		//YOU CAN ADD WORKLOAD LATER ON
+		setTimeout(function() {
+			workloads.add({numOfTrials:1000000});
+		},10);
 	});
 });
