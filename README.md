@@ -137,8 +137,11 @@ Alternatively, you can install using Node Package Manager (npm):
 ## Test
 
 Some basic tests are implemented using mocha.
+
     mocha test -R spec
 
 You can use npm test as well:
     
     npm test
+ 
+
