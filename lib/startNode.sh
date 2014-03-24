@@ -1,0 +1,1 @@
+node --max_old_space_size=16384 $1 $2
