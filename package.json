@@ -1,6 +1,6 @@
 {
   "name": "workerrpc",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Worker/Pool Abstraction for RedisRPC",
   "main": "lib/WorkerRPC.js",
   "directories": {
